@@ -14,7 +14,7 @@ import ru.tehkode.permissions.bukkit.PermissionsEx;
  * Kenny Tang (c) 2017
  */
 public class BetterChatListener implements Listener {
-    @EventHandler
+
     public void chatFormatter(AsyncPlayerChatEvent event) {
         Player player = event.getPlayer();
         PermissionUser user = PermissionsEx.getUser(player);
