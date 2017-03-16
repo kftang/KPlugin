@@ -1,0 +1,13 @@
+name: KPlugin
+version: 1.0
+author: kenYUNOT
+main: com.kftang.KPlugin.KPlugin
+website: kftang.com
+commands:
+  kplugin:
+    description: Display information about KPlugin
+    usage: /kplugin
+  rtp:
+    description: Teleport to a random location
+    usage: /rtp
+depend: [PermissionsEx]
