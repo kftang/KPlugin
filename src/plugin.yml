@@ -10,4 +10,6 @@ commands:
   rtp:
     description: Teleport to a random location
     usage: /rtp
-depend: [PermissionsEx]
+  vote:
+    description: Vote for different actions
+    usage: /vote <weather/time> <setting>

