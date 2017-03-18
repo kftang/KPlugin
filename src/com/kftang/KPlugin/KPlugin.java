@@ -23,7 +23,7 @@ public class KPlugin extends JavaPlugin {
         blocks.add("DIAMOND_BLOCK");
         blocks.add("EMERALD_BLOCK");
         try {
-            getConfig().load("KPlugin/config.yml");
+            getConfig().load("plugins/KPlugin/config.yml");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -34,7 +34,7 @@ public class KPlugin extends JavaPlugin {
         getConfig().addDefault("votePercentageNeeded", 50.0);
         getConfig().addDefault("voteExpireTime", 30);
         try {
-            getConfig().save("KPlugin/config.yml");
+            getConfig().save("plugins/KPlugin/config.yml");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -45,5 +45,6 @@ public class KPlugin extends JavaPlugin {
 
         //Register Commands
         getCommand("rtp").setExecutor(new CommandRandomTeleport(getConfig(), getServer()));
+        getCommand("vote").setExecutor(new CommandVoteCommands(getConfig(), getServer()));
     }
 }

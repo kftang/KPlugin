@@ -21,12 +21,12 @@ public class BetterChatListener implements Listener {
         event.setFormat(String.format("%s%s: %s%s", user.getPrefix(), player.getDisplayName(), ChatColor.GOLD ,event.getMessage()));
     }
 
-    @EventHandler
+
     public void onPlayerJoined(PlayerJoinEvent event) {
         event.setJoinMessage(String.format("%s[%s✔%s] %s", ChatColor.GRAY, ChatColor.GREEN, ChatColor.GRAY, event.getPlayer().getDisplayName()));
     }
 
-    @EventHandler
+
     public void onPlayerQuit(PlayerQuitEvent event) {
         event.setQuitMessage(String.format("%s[%s✘%s] %s", ChatColor.GRAY, ChatColor.RED, ChatColor.GRAY, event.getPlayer().getDisplayName()));
     }

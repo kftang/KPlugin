@@ -49,9 +49,9 @@ public class ElevatorListener implements Listener {
             //Iterator for finding the next block
             Location nextBlock = player.getLocation().clone().add(0, originaloffset, 0);
             //Loop to get the next block
-            for (int i = 0; !elevatorBlocks.contains(nextBlock.getBlock().getType()) && (i < maxDistance || i == -1); i++) {
+            for (int i = 0; !elevatorBlocks.contains(nextBlock.getBlock().getType()) && (i < maxDistance || maxDistance == -1); i++) {
                 nextBlock.add(0, nextamt, 0);
-                if (nextBlock.getY() > 256 && nextBlock.getY() < 1)
+                if (nextBlock.getY() > 256 || nextBlock.getY() < 1)
                     return false;
                 //If the next block is an elevator block
                 if (elevatorBlocks.contains(nextBlock.getBlock().getType())) {

@@ -50,10 +50,8 @@ public class CommandRandomTeleport implements CommandExecutor {
                     //Find the topmost block of the random location
                     do
                         randomLocation.add(0, -1d, 0);
-                    while (randomLocation.getBlock().getType().equals(Material.AIR));
-                    System.out.println(randomLocation);
-                }
-                while (randomLocation.getBlock().getType().equals(Material.WATER) || randomLocation.getBlock().getType().equals(Material.BEDROCK));
+                    while (randomLocation.getBlock().getType().equals(Material.AIR) || randomLocation.getBlock().getType().equals(Material.BEDROCK));
+                } while (randomLocation.getBlock().getType().equals(Material.WATER) || randomLocation.getBlock().getType().equals(Material.BEDROCK));
                 randomLocation.add(0, 1d, 0);
                 //Teleport the player to the new location
                 player.teleport(randomLocation);

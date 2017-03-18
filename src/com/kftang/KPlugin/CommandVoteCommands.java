@@ -8,63 +8,72 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Kenny Tang (c) 2017
  */
-public class CommandVoteCommands implements CommandExecutor {
+public class CommandVoteCommands implements CommandExecutor, Runnable {
     private enum VoteType {WEATHER, TIME, KICK, MUTE, NONE};
     private final Server server;
     private final double percentage;
     private final long voteExpireTime;
     private boolean voting;
     private int supporters;
+    private long expireTime;
+    private Set<Player> votedPlayers;
     private VoteType currentVote;
-    private Object currentVoteTarget;
-    private TimerTask expireTask;
-    private Timer expireTimer;
+    private String currentVoteTarget;
+    private Thread timerThread;
 
-    public CommandVoteCommands(FileConfiguration config, Server server) {
-        expireTimer = new Timer("expire");
+    CommandVoteCommands(FileConfiguration config, Server server) {
         this.server = server;
         percentage = 100d / config.getDouble("votePercentageNeeded");
-        voting = false;
-        supporters = 0;
         voteExpireTime = config.getInt("voteExpireTime");
-        expireTask = new TimerTask() {
-            @Override
-            public void run() {
-                supporters = 0;
-                currentVote = VoteType.NONE;
-                currentVoteTarget = null;
-            }
-        };
+        votedPlayers = new HashSet<>();
+        init(false);
+        timerThread = new Thread(this);
+    }
+
+    private void init(boolean expired) {
+        supporters = 0;
+        currentVote = VoteType.NONE;
+        currentVoteTarget = "";
+        voting = false;
+        votedPlayers.clear();
+        if(expired)
+            server.broadcastMessage("Vote has expired!");
     }
 
     @Override
     public boolean onCommand(CommandSender commandSender, Command command, String label, String[] args) {
+        String currentVoteDescription = currentVote.toString().toLowerCase() + " " + currentVoteTarget;
         Player player = (Player) commandSender;
+        //Number of people required to allow vote through
         int voteThreshold = (int)(server.getOnlinePlayers().size() / percentage);
-        if(voting  && args.length == 0) {
+        //If we are currently in a vote and the command is by itself
+        if(voting && args.length == 0) {
+            //If the player has already voted...
+            if(!votedPlayers.add(player)) {
+                player.sendMessage("You have already voted!");
+                return true;
+            }
             supporters++;
             player.sendMessage(ChatColor.GRAY + "" + ChatColor.ITALIC + "Vote Casted");
             if(supporters >= voteThreshold) {
-                server.broadcastMessage(String.format("%sVote for %s has passed!", ChatColor.DARK_GRAY, currentVote.toString().toLowerCase()));
-                server.dispatchCommand(server.getConsoleSender(), currentVote.toString() + " " + currentVoteTarget.toString());
-                expireTimer.cancel();
-                expireTask.run();
+                votePassed();
                 return true;
             } else {
-                server.broadcastMessage(String.format("%s%d/%d has voted for %s", ChatColor.DARK_GRAY, supporters, voteThreshold, currentVote.toString().toLowerCase()));
+                server.broadcastMessage(String.format("%s%d/%d has voted for %s!", ChatColor.DARK_GRAY, supporters, voteThreshold, currentVoteDescription));
             }
         }
-        if(args.length != 2 && !voting) {
+        if((args.length != 2 && !voting) || (voting && args.length != 0 )) {
             printUsage(player);
             return true;
         }
-        voting = true;
+        //First arg is what the vote is for
+        //Check for a valid second argument
         switch (args[0]) {
             case "weather":
                 if(!(args[1].equals("clear") || args[1].equals("storm"))) {
@@ -83,28 +92,49 @@ public class CommandVoteCommands implements CommandExecutor {
                 currentVoteTarget = args[1];
                 break;
             case "kick":
-                if(!server.getPlayer(args[1]).isOnline()){
+                if(server.getPlayer(args[1]) == null){
                     player.sendMessage("Invalid target, player " + args[1] + " is not online.");
                     return true;
                 }
                 currentVote = VoteType.KICK;
-                currentVoteTarget = server.getPlayer(args[1]);
+                currentVoteTarget = args[1];
                 break;
             case "mute":
-                if(!server.getPlayer(args[1]).isOnline()){
+                if(server.getPlayer(args[1]) == null){
                     player.sendMessage("Invalid target, player " + args[1] + " is not online.");
                     return true;
                 }
                 currentVote = VoteType.MUTE;
-                currentVoteTarget = server.getPlayer(args[1]);
+                currentVoteTarget = args[1];
                 break;
             default:
                 printUsage(player);
                 return true;
         }
-        expireTimer.schedule(expireTask, voteExpireTime);
-        server.broadcastMessage(String.format("%s%s has initiated a vote for %s, %d more players needed to pass vote for %s. Type /vote to support this vote.", ChatColor.DARK_GRAY, player.getDisplayName(), args[0], voteThreshold, args[0]));
+        currentVoteDescription = currentVote.toString().toLowerCase() + " " + currentVoteTarget;
+        voting = true;
+        supporters++;
+        votedPlayers.add(player);
+        expireTime = System.currentTimeMillis() / 1000 + voteExpireTime;
+        server.broadcastMessage(String.format("%s%s has initiated a vote for %s, %d more players needed. Type /vote to support this vote.", ChatColor.DARK_GRAY, player.getDisplayName(), currentVoteDescription, Math.max(voteThreshold - 1, 0)));
+        if(supporters >= voteThreshold) {
+            votePassed();
+            return true;
+        }
         return true;
+    }
+
+    private void votePassed() {
+        server.broadcastMessage(String.format("%sVote for %s %s has passed!", ChatColor.DARK_GRAY, currentVote.toString().toLowerCase(), currentVoteTarget));
+        String execCommand = currentVote.toString();
+        if(currentVote == VoteType.TIME)
+            execCommand += " set";
+        if(currentVote == VoteType.WEATHER && currentVoteTarget.equals("storm"))
+            server.dispatchCommand(server.getConsoleSender(), execCommand + " " + "rain");
+        if(currentVote == VoteType.WEATHER && currentVoteTarget.equals("clear"))
+            server.dispatchCommand(server.getConsoleSender(), execCommand + " " + "sun");
+        server.dispatchCommand(server.getConsoleSender(), execCommand + " " + currentVoteTarget);
+        init(false);
     }
 
     private void printUsage(Player player) {
@@ -116,6 +146,20 @@ public class CommandVoteCommands implements CommandExecutor {
             player.sendMessage(String.format("%s/vote time %s[day/night]", ChatColor.GREEN, ChatColor.YELLOW));
             player.sendMessage(String.format("%s/vote kick %s[player]", ChatColor.GREEN, ChatColor.YELLOW));
             player.sendMessage(String.format("%s/vote mute %s[player]", ChatColor.GREEN, ChatColor.YELLOW));
+        }
+    }
+
+    @Override
+    public void run() {
+        while(true) {
+            if(voting && System.currentTimeMillis() / 1000 > expireTime) {
+                init(true);
+            }
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }
